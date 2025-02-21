@@ -1,5 +1,6 @@
 
 -- Utility functions -----------------------------------------------------------
+print("JACK", "Hello from Tupfile.lua")
 
 function run_now(command)
     local handle
