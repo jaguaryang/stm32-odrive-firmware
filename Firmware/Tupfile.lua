@@ -408,16 +408,6 @@ end
 python_command = find_python3()
 print('Using python command "'..python_command..'"')
 
--- TODO: use CI to verify that on PRs the enums.py file is consistent with the YAML.
--- Note: we currently check this file into source control for two reasons:
---  - Don't require tup to run in order to use odrivetool from the repo
---  - On Windows, tup is unhappy with writing outside of the tup directory
---tup.frule{command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template enums_template.j2 --output ../tools/odrive/enums.py'}
-
--- tup.frule{
---     command=python_command..' ../tools/odrive/version.py --output %o',
---     outputs={'autogen/version.c'}
--- }
 
 -- Autogen files from YAML interface definitions
 root_interface = board.include[1].root_interface
@@ -447,19 +437,8 @@ tup.frule{
             ' -Wl,-Map=%O.map -o %o',
     outputs={'build/ODriveFirmware.elf', extra_outputs={'build/ODriveFirmware.map'}}
 }
--- display the size
+-- display the size, create *.hex and *.bin output formats
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command=CCPATH..'arm-none-eabi-size %f'}
--- create *.hex and *.bin output formats
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command=CCPATH..'arm-none-eabi-objcopy -O ihex %f %o', outputs={'build/ODriveFirmware.hex'}}
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command=CCPATH..'arm-none-eabi-objcopy -O binary -S %f %o', outputs={'build/ODriveFirmware.bin'}}
 
-if tup.getconfig('ENABLE_DISASM') == 'true' then
-    tup.frule{inputs={'build/ODriveFirmware.elf'}, command=CCPATH..'arm-none-eabi-objdump %f -dSC > %o', outputs={'build/ODriveFirmware.asm'}}
-end
-
-if tup.getconfig('DOCTEST') == 'true' then
-    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre-cpp/include -I./Drivers/DRV8301 -I./doctest'
-    tup.foreach_rule('Tests/*.cpp', 'g++ -O3 -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
-    tup.frule{inputs='Tests/bin/*.o', command='g++ %f -o %o', outputs='Tests/test_runner.exe'}
-    tup.frule{inputs='Tests/test_runner.exe', command='%f'}
-end
